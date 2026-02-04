@@ -178,9 +178,12 @@ function _callback_message($m){
     if(!empty($heartinfo_arr['faceCode'])){
         $heartinfo['faceCode'] = $heartinfo_arr['faceCode'];
     }
-    $result = mysql_query("select * from axgo_device where macaddr = '".$heartinfo_arr['deviceMac']."' limit 1", $MYCONF['dbcon']);
-	$device = mysql_fetch_array($result,MYSQL_ASSOC);
-	mysql_free_result($result);
+    // 改用 common_db_select
+    $result = common_db_select("select * from axgo_device where macaddr = '".$heartinfo_arr['deviceMac']."' limit 1", $MYCONF['dbcon']);
+    // 改用 mysqli_fetch_array
+	$device = mysqli_fetch_array($result,MYSQLI_ASSOC);
+    // 改用 mysqli_free_result
+	mysqli_free_result($result);
 
     $sql = "insert into axgo_device set ".common_db_fmtlist($heartinfo);
 	if (isset($device['id'])) {
@@ -188,7 +191,8 @@ function _callback_message($m){
         unset($heartinfo['createtime_str']);
         $sql = "update axgo_device set ".common_db_fmtlist($heartinfo)." where id = '".$device['id']."'";
     }
-	mysql_query($sql,$MYCONF['dbcon']);
+    // 改用 common_db_query
+	common_db_query($sql,$MYCONF['dbcon']);
 	cli_message('[heartbeat]'.$sql,3,$MYCONF['message_handle']);
 }
 

@@ -17,11 +17,17 @@ function core_select_data($sql, &$datas){
     common_change_database($CONF['mysql_dbname'], $dbcon);
 
     $datas = array();
-    $result = mysql_query($sql, $dbcon);
-    while ($row = mysql_fetch_array($result,MYSQL_ASSOC)) {
-        array_push($datas, $row);
+    // 使用 c_common.pms 封装好的函数 common_db_select，它已经改用了 mysqli_query
+    $result = common_db_select($sql, $dbcon);
+    
+    // 改用 mysqli_fetch_array
+    if ($result) {
+        while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
+            array_push($datas, $row);
+        }
+        // 改用 mysqli_free_result
+        mysqli_free_result($result);
     }
-    mysql_free_result($result);
     common_close_connect($dbcon);
     return true;
 }
@@ -30,7 +36,8 @@ function core_query_data($sql){
     $CONF = &$GLOBALS['CONF'];
     $dbcon = common_get_connect($CONF['mysql_server_addr'],$CONF['mysql_username'],$CONF['mysql_password']);
     common_change_database($CONF['mysql_dbname'], $dbcon);
-    mysql_query($sql, $dbcon);
+    // 使用 c_common.pms 封装好的函数 common_db_query，它已经改用了 mysqli_query
+    common_db_query($sql, $dbcon);
     common_close_connect($dbcon);
     return true;
 }
