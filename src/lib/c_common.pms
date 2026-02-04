@@ -6,48 +6,64 @@
 
 //connect
 function common_get_connect($sever,$uname,$upass){
-	$conn =  mysql_connect($sever,$uname,$upass);
+	// 改用 mysqli
+	$conn = mysqli_connect($sever,$uname,$upass);
 	return($conn);
 }
 
 //use db
 function common_change_database($dbname,&$conn){
-	$bool = mysql_select_db($dbname,$conn);
+	// 改用 mysqli_select_db
+	$bool = mysqli_select_db($conn, $dbname);
 	return($bool);
 }
 
 //执行有结果集返回的sql
 function common_db_select($sql,&$conn){
-	$result = array();
-	$cursor = mysql_query($sql,$conn);
+	// 改用 mysqli_query
+	$cursor = mysqli_query($conn, $sql);
 	return($cursor);
 }
 
 //执行无结果集的sql
 function common_db_query($sql,&$conn){
-	$flag = mysql_query($sql,$conn);
+	// 改用 mysqli_query
+	$flag = mysqli_query($conn, $sql);
 	return($flag);
 }
 
 //close db link
 function common_close_connect(&$conn){
 	if($conn){
-		mysql_close($conn);
+		// 改用 mysqli_close
+		mysqli_close($conn);
 	}
 }
 
 //transfrom array to str
 //exp: array('a'=>'1','b'=>'2')
 //retunr: a='1',b='2'
+//注意：mysql_real_escape_string 需要连接对象，但这里传参没有 conn。
+//为了兼容性，如果 global 有 $conn 我们就用，没有就只能简单转义（这有风险，建议后续重构调用方传入 conn）
 function common_db_fmtlist(&$arr)
 {
 	$re_str = null;
 	if (!is_array($arr)){
 		return(null);
 	}
+    
+    // 尝试获取全局连接，如果上层逻辑定义了 global $conn
+    global $conn;
+
 	foreach ($arr as $key => $value) 
 	{
-		$re_str .= ",".$key."='".mysql_real_escape_string($value)."'";
+        if ($conn) {
+            $safe_value = mysqli_real_escape_string($conn, $value);
+        } else {
+            // 降级方案：如果没有连接对象，仅做简单转义（不推荐，但为了不改动函数签名暂时如此）
+            $safe_value = addslashes($value); 
+        }
+		$re_str .= ",".$key."='".$safe_value."'";
 	}
 	if (!empty($re_str)) 
 	{
