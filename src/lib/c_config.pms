@@ -2,10 +2,12 @@
 $CONF = array();
 
 //数据库链接信息
-$CONF["mysql_server_addr"] = "rds52ji8rck5gs211z3rdo.mysql.rds.aliyuncs.com";
-$CONF["mysql_username"]="awatad";
-$CONF["mysql_password"]="Hhsu82lsjH9k";
-$CONF["mysql_dbname"]="axcloud";
+// 优先使用环境变量，如果未设置则回退到默认值
+$CONF["mysql_server_addr"] = getenv('MYSQL_HOST') ;
+$CONF["mysql_username"] = getenv('MYSQL_USERNAME') ;
+$CONF["mysql_password"] = getenv('MYSQL_PASSWORD') ;
+$CONF["mysql_dbname"] = getenv('MYSQL_DATABASE') ;
+$CONF["mysql_port"] = getenv('MYSQL_PORT') ;
 
 //mosquitto参数
 $CONF['mosquitto_server'] = "127.0.0.1";
