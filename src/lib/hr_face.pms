@@ -1,0 +1,451 @@
+<?php
+
+	$config = array();
+	$config['appid'] = '6qToKcFMaKPyZfBYYatQNiX6GFbSz12GkrxXBPrZUVAQ';
+	$config['key'] = '92H4tMiuk2B1PexK2rhUSwqApscFUeUXLR97t6w2WMYZ';
+	hr_get_token($config);
+	function hr_get_token(&$config){
+		if(empty($config['appid'])){
+			$data = '{"code":"1","status":"fail","msg":"appid不能为空"}';
+			$data =  json_decode($data,1);
+			return $data;
+		}
+		if(empty($config['key'])){
+			$data = '{"code":"1","status":"fail","msg":"appkey不能为空"}';
+			$data =  json_decode($data,1);
+			return $data;
+		}
+		$url = 'http://link.arcsoftai.com/oauth/2.0/token';
+		$post_data = array();
+		$post_data['appId'] = $config['appid'];
+		$post_data['appKey'] = $config['key'];
+		$res = hr_request($url,'POST',$post_data);
+		$data = '';
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		$config['token'] = $data['data']['accessToken'];
+		$config['tokenType'] = $data['data']['tokenType'];
+		$config['expiresIn'] = $data['data']['expiresIn'];
+		return true;
+	
+	}
+	//$group = 'xxxx';
+	//hr_creat_group($group,$config);
+	//创建组织
+	function hr_creat_group($group,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($group)){
+			$data = '{"code":"1","status":"fail","msg":"组织名称为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		$url = 'https://link.arcsoftai.com/v1/personset/add';
+		$post_data = array();
+		$post_data['personSetId'] = $group;
+		$post_data['accessToken'] = $config['token'];
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;	
+	}
+	/*
+		group 人员组名称
+		人脸库删除前，必须与所有设备解绑	
+	*/
+	function hr_delete_group($group,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($group['name'])){
+			$data = '{"code":"1","status":"fail","msg":"组织名称为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		$url = 'https://link.arcsoftai.com/v1/personset/delete';
+		$post_data = array();
+		$post_data['personSetId'] = $group;
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;	
+	}
+	/*添加人员
+	user array
+	user.id 人员id
+	user.name 人员名称
+	user.primaryFaceId 设置需修改的人员主照片	
+	user.accessTime	通行时间段,startTime0,endTime0,startTime1,endTime1...。单对时 间格式：HH:mm:ss,HH:mm:ss。最多只支持24对
+	user.imageBase64 Base64形式上传人脸图片,支持数组形式同时上传多张图片
+	*/
+	//$user = array();
+	//$user['id'] = 'zxxx11116';
+	//$user['name'] = 'zxxx11116';
+	//$user['primaryFaceIndex'] = 0;
+	//$user['accessTime'] = '08:00:00,11:59:59';
+	//$user['imageBase64'] = hr_base64EncodeImage('/userdata/axruntime/pub/fhUserImage/25.jpg');
+	//$aa = hr_creat_person($user,$config);
+	//var_dump($aa);
+	function hr_creat_person($user,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($user['id'])){
+			$data = '{"code":"1","status":"fail","msg":"用户id为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		if(empty($user['name'])){
+			$data = '{"code":"1","status":"fail","msg":"用户名称为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		if(isset($user['accessTime'])){
+			$post_data['accessTime'] = $user['accessTime'];		
+		}
+		$url = 'https://link.arcsoftai.com/v1/person/add';
+		$post_data = array();
+		$post_data['personId'] = $user['id'];
+		$post_data['name'] = $user['name'];
+		if(isset($user['imageBase64'])){
+			$post_data['imageBase64'] = $user['imageBase64'];		
+		}
+		$post_data['accessToken'] = $config['token'];
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;	
+	}
+	/*
+		user array
+		user.id 需修改的人员id
+		user.name 需修改的人员名称
+		user.delFaceIds 需删除的人员照片id，多个以逗号隔开
+		user.imageBase64 需上传的人员的照片
+		user.primaryFaceId 设置需修改的人员主照片	
+	
+	*/
+	function hr_update_person($user,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($user['id'])){
+			$data = '{"code":"1","status":"fail","msg":"用户id为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		$url = 'https://link.arcsoftai.com/v1/person/update';
+		$post_data = array();
+		$post_data['personId'] = $user['id'];
+		if(isset($user['name'])){
+			$post_data['name'] = $user['name'];		
+		}
+		if(isset($user['delFaceIds'])){
+			$post_data['delFaceIds'] = $user['delFaceIds'];		
+		}
+		if(isset($user['imageBase64'])){
+			$post_data['imageBase64'] = $user['imageBase64'];		
+		}
+		if(isset($user['primaryFaceId'])){
+			$post_data['primaryFaceId'] = $user['primaryFaceId'];		
+		}
+		$post_data['accessToken'] = $config['token'];
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;
+	
+	
+	}
+
+	/*
+		personIds 人员id，多个用逗号隔开
+	*/
+	function hr_delete_person($personIds,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($personIds)){
+			$data = '{"code":"1","status":"fail","msg":"用户id为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		$url = 'https://link.arcsoftai.com/v1/person/delete';
+		$post_data = array();
+		$post_data['personIds'] = $personIds;
+		$post_data['accessToken'] = $config['token'];
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;	
+	}
+	
+
+	/*
+		users 人员id，多个用,号隔开
+		group 组织名称
+	
+	*/
+
+	//$aa = hr_user_to_group('002','xxxx',$config);
+	//var_dump($aa);
+	function hr_user_to_group($users,$group,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($users)){
+			$data = '{"code":"1","status":"fail","msg":"用户为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		if(empty($group)){
+			$data = '{"code":"1","status":"fail","msg":"组织为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		$url = 'https://link.arcsoftai.com/v1/personset/person/add';
+		$post_data = array();
+		$post_data['personIds'] = $users;
+		$post_data['personSetId'] = $group;
+		$post_data['accessToken'] = $config['token'];
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;	
+	
+	}
+	/*	关联人员到组设备，人员组可以是多个，以逗号隔开
+		code 设备接入码
+		group 人员组名称
+	*/
+	function hr_devicebind_group($code,$groups,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($code)){
+			$data = '{"code":"1","status":"fail","msg":"接入码为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		if(empty($groups)){
+			$data = '{"code":"1","status":"fail","msg":"组织为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		$url = 'https://link.arcsoftai.com/v1/devicebind/personset/add';
+		$post_data = array();
+		$post_data['accessCode'] = $code;
+		$post_data['personSetIds'] = $groups;
+		$post_data['accessToken'] = $config['token'];
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;	
+	}
+
+	/*	关联设备到人员组，设备可以是多个，以逗号隔开
+		code 设备接入码
+		group 人员组名称
+	*/
+	function hr_groupbind_device($codes,$group,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($codes)){
+			$data = '{"code":"1","status":"fail","msg":"接入码为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		if(empty($group)){
+			$data = '{"code":"1","status":"fail","msg":"组织为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		$url = 'https://link.arcsoftai.com/v1/devicebind/personset/device/add';
+		$post_data = array();
+		$post_data['accessCodes'] = $codes;
+		$post_data['personSetId'] = $group;
+		$post_data['accessToken'] = $config['token'];
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;
+	}
+
+	/*
+		设备和人员组解绑
+		codes 设备接入码 设备可以是多个，以逗号隔开
+		groups 人员组名称 人员组可以是多个，以逗号隔开
+	
+	*/
+	function hr_unbind_device_gruop($codes,$groups,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($codes)){
+			$data = '{"code":"1","status":"fail","msg":"接入码为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		if(empty($groups)){
+			$data = '{"code":"1","status":"fail","msg":"组织为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		$url = 'https://link.arcsoftai.com/v1/devicebind/personset/device/add';
+		$post_data = array();
+		$post_data['accessCodes'] = $codes;
+		$post_data['personSetIds'] = $groups;
+		$post_data['accessToken'] = $config['token'];
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;
+	
+	
+	}
+
+
+	/*
+		code 设备接入码	
+	*/
+	//$aa = hr_user_sync('A3HF-595W-NSC9-YKLQ',$config);
+	//var_dump($aa);
+	function hr_user_sync($code,$config){
+		if(empty($config['token'])){
+			$data = '{"code":"1","status":"fail","msg":"未获取到token"}';
+			$data =  json_decode($data,1);
+			return $data;		
+		}
+		if(empty($code)){
+			$data = '{"code":"1","status":"fail","msg":"接入码为空"}';
+			$data =  json_decode($data,1);
+			return $data;	
+		}
+		
+		$url = 'https://link.arcsoftai.com/v1/devicebind/personset/sync';
+		$post_data = array();
+		$post_data['accessCode'] = $code;
+		$post_data['accessToken'] = $config['token'];
+		$res = hr_request($url,'POST',$post_data);
+		$chech_res = hr_result_check($res,$data);
+		if(!$chech_res){
+			return $data;
+		}
+		return true;	
+	}
+
+	function hr_base64EncodeImage ($image_file) {
+		$base64_image = '';
+		$image_info = getimagesize($image_file);
+		$image_data = fread(fopen($image_file, 'r'), filesize($image_file));
+		$base64_image = 'data:' . $image_info['mime'] . ';base64,' . chunk_split(base64_encode($image_data));
+		return $base64_image;
+	}
+
+	function hr_mkuuid($len = 36){
+		$uuid = "";
+		$str = "0123456789abcdefghijklmnopqrstuvwxyz";
+		for ($i = 0 ; $i < $len; $i++)
+		{
+			$uuid .= substr($str, mt_rand(0,31), 1);
+		}
+		
+		return $uuid;
+	}
+
+	function hr_result_check($res,&$data){
+		if(!$res){
+			$data = '{"code":"1","status":"fail","msg":"请求出错"}';
+			$data =  json_decode($data,1);
+			return false; 
+		}
+		if($res['httpCode'] != 200){
+			$data = '{"code":"1","status":"fail","msg":"网络出错"}';
+			$data =  json_decode($data,1);
+			return false; 
+		}
+		if($res['data']['code'] != 0){
+			$data = '{"code":"1","status":"fail","msg":"'.$res['data']['msg'].'"}';
+			$data =  json_decode($data,1);
+			return false; 
+		}
+		$data = '{"code":"0","status":"success","msg":"ok","data":'.json_encode($res['data']['data']).'}';
+		$data =  json_decode($data,1);
+		return true; 
+
+	}
+	function hr_request($url,$method = "GET", $data = array()){
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+		if (strpos($url, "https") !== FALSE) {
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // 跳过证书检查
+			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);  // 从证书中检查SSL加密算法是否存在
+		}
+		if($method == "POST"){
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST,	'POST');			
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+		}
+		
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:multipart/form-data'));
+		//curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json; charset=utf-8'));	
+
+		$result['data'] = json_decode(curl_exec($ch),1);
+		$result['httpCode'] = curl_getinfo($ch,CURLINFO_HTTP_CODE);
+		if(strlen(curl_error($ch))>1){
+			$result = false;
+		}
+		curl_close($ch);
+		return $result;
+	}
+	
+
+	
+	
+
+?>

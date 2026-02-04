@@ -1,0 +1,573 @@
+<?php
+$ARCFACE = array();
+$ARCFACE['appId'] = '6qToKcFMaKPyZfBYYatQNiX6GFbSz12GkrxXBPrZUVAQ';
+$ARCFACE['appKey'] = '92H4tMiuk2B1PexK2rhUSwqApscFUeUXLR97t6w2WMYZ';
+$ARCFACE['apiHost'] = 'http://link.arcsoftai.com';
+$ARCFACE['configPath'] = '/storage/axruntime/app/config/arcface';
+
+function arcface_get_token(&$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($ARCFACE['appId']) || empty($ARCFACE['appKey'])){
+        $msg = "缺少appId或appKey配置";
+        return false;
+    }
+    $post_data = array();
+    $post_data['appId'] = $ARCFACE['appId'];
+    $post_data['appKey'] = $ARCFACE['appKey'];
+    $res = arcface_request('/oauth/2.0/token','POST', $post_data, $msg);
+    if(!$res || $res['code'] !== 0 || !isset($res['data'])){
+        return false;
+    }
+    if(empty($res['data']['accessToken']) ||
+        empty($res['data']['tokenType']) ||
+        empty($res['data']['expiresIn'])){
+        $msg = "获取Token失败，返回数据缺少必要信息";
+        return false;
+    }
+    $res['data']['syncTime'] = time();  //增加获取事件
+    file_put_contents($ARCFACE['configPath'], json_encode($res['data']), LOCK_EX);
+    $msg = "获取Token成功";
+    return true;
+}
+
+function arcface_creat_group($personSetId, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($personSetId)){
+        $msg = "组名不能为空";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+
+    $post_data = array();
+    $post_data['personSetId'] = $personSetId;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/personset/add','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+function arcface_modify_group($oldPersonSetId, $newPersonSetId, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($oldPersonSetId) || empty($newPersonSetId)){
+        $msg = "组名不能为空";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+
+    $post_data = array();
+    $post_data['oldPersonSetId'] = $oldPersonSetId;
+    $post_data['newPersonSetId'] = $newPersonSetId;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/personset/update','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+function arcface_delete_group($personSetId, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($personSetId)){
+        $msg = "组名不能为空";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+
+    $post_data = array();
+    $post_data['personSetId'] = $personSetId;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/personset/delete','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+function arcface_creat_person($user, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($user['personId']) || empty($user['name'])){
+        $msg = "用户信息不能为空";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+
+    $post_data = array();
+    $post_data['personId'] = $user['personId'];
+    $post_data['name'] = $user['name'];
+    if(!empty($user['imageBase64'])){
+        $post_data['imageBase64'] = $user['imageBase64'];
+    }
+    $post_data['accessStartDate'] = $user['accessStartDate'] ? $user['accessStartDate'] : date("Y-m-d", time());
+    $post_data['accessEndDate'] = $user['accessEndDate'] ? $user['accessEndDate'] : date("Y-m-d", time()+1576800000);
+    $post_data['weekRange'] = $user['weekRange'] ? $user['weekRange'] : "MON,TUES,WED,THUR,SUN,SAT,FRI";
+    $post_data['accessTime'] = $user['accessTime'] ? $user['accessTime'] : " 00:00:00,23:59:59,,,,";
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/person/add','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+function arcface_update_person($user, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($user['personId']) || empty($user['name'])){
+        $msg = "用户信息不能为空";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+    $post_data = array();
+    $post_data['personId'] = $user['personId'];
+    $post_data['name'] = $user['name'];
+    if(!empty($user['imageBase64'])){
+        $post_data['imageBase64'] = $user['imageBase64'];
+    }
+    $post_data['accessStartDate'] = $user['accessStartDate'] ? $user['accessStartDate'] : date("Y-m-d", time());
+    $post_data['accessEndDate'] = $user['accessEndDate'] ? $user['accessEndDate'] : date("Y-m-d", time()+1576800000);
+    $post_data['weekRange'] = $user['weekRange'] ? $user['weekRange'] : "MON,TUES,WED,THUR,SUN,SAT,FRI";
+    $post_data['accessTime'] = $user['accessTime'] ? $user['accessTime'] : " 00:00:00,23:59:59,,,,";
+
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/person/update','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+/*
+    personIds 人员id，多个用逗号隔开
+*/
+function arcface_delete_person($personIds, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($personIds)){
+        $msg = "用户信息不能为空";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+
+    $post_data = array();
+    $post_data['personIds'] = $personIds;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/person/delete','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+function arcface_user_to_group($personIds, $personSetId, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($personIds) || empty($personSetId)){
+        $msg = "必要参数错误";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+
+    $post_data = array();
+    $post_data['personIds'] = $personIds;
+    $post_data['personSetId'] = $personSetId;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/personset/person/add','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+
+function arcface_user_unto_group($personIds, $personSetId, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($personIds) || empty($personSetId)){
+        $msg = "必要参数错误";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+
+    $post_data = array();
+    $post_data['personIds'] = $personIds;
+    $post_data['personSetId'] = $personSetId;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/personset/person/delete','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+/*
+人员组关联到设备，设备是多个，以逗号隔开
+*/
+function arcface_groupbind_devices($accessCodes, $personSetId, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($accessCodes) || empty($personSetId)){
+        $msg = "必要参数错误";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+    $post_data = array();
+    $post_data['accessCodes'] = $accessCodes;
+    $post_data['personSetId'] = $personSetId;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/devicebind/personset/device/add','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+
+
+function arcface_user_sync($accessCode, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($accessCode)){
+        $msg = "必要参数错误";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+    $post_data = array();
+    $post_data['accessCode'] = $accessCode;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/devicebind/personset/sync','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+function arcface_device_log($accessCode, $pageIndex, $pageNum, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($accessCode)){
+        $msg = "必要参数错误";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+    $post_data = array();
+    $post_data['filter'] = 'accessCode = "'.$accessCode.'"';
+    $post_data['accessToken'] = $config['accessToken'];
+    $post_data['pageIndex'] = $pageIndex;
+    $post_data['pageNum'] = $pageNum;
+    $res = arcface_request('/v1/access/log/list','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return $res['data'];
+}
+
+
+/*
+设备关联人员组，人员组可以是多个，以逗号隔开
+*/
+function arcface_device_bind_groups($accessCode, $personSetIds, &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($accessCode) || empty($personSetIds)){
+        $msg = "必要参数错误";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+    $post_data = array();
+    $post_data['accessCode'] = $accessCode;
+    $post_data['personSetIds'] = $personSetIds;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/devicebind/personset/add','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+/*
+    设备和人员组解绑
+    codes 设备接入码 设备可以是多个，以逗号隔开
+    groups 人员组名称 人员组可以是多个，以逗号隔开
+
+*/
+function arcface_unbind_devices_groups($accessCodes,$personSetIds,&$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    if(empty($accessCodes) || empty($personSetIds)){
+        $msg = "必要参数错误";
+        return false;
+    }
+
+    $config = json_decode(file_get_contents($ARCFACE['configPath']), true);
+    if(!$config ||
+        empty($config['accessToken']) ||
+        empty($config['tokenType']) ||
+        empty($config['expiresIn']) ||
+        empty($config['syncTime']) ||
+        $config['syncTime'] + $config['expiresIn'] <= time()){
+        $msg = "无效Token";
+        return false;
+    }
+
+    $post_data = array();
+    $post_data['accessCodes'] = $accessCodes;
+    $post_data['personSetIds'] = $personSetIds;
+    $post_data['accessToken'] = $config['accessToken'];
+    $res = arcface_request('/v1/devicebind/personset/delete','POST', $post_data, $msg);
+    if(!$res){
+        return false;
+    }
+    if($res['code'] !== 0){
+        $msg = $res['msg'];
+        return false;
+    }
+    return true;
+}
+
+
+function arcface_base64EncodeImage ($image_file) {
+    $image_info = getimagesize($image_file);
+    $image_data = fread(fopen($image_file, 'r'), filesize($image_file));
+    return 'data:' . $image_info['mime'] . ';base64,' . chunk_split(base64_encode($image_data));
+}
+
+function arcface_request($url,$method = "GET", $data = array(), &$msg){
+
+    $ARCFACE = &$GLOBALS['ARCFACE'];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $ARCFACE["apiHost"].$url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+    if (strpos($url, "https") !== FALSE) {
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // 跳过证书检查
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);  // 从证书中检查SSL加密算法是否存在
+    }
+    if($method == "POST"){
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST,	'POST');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    }
+
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:multipart/form-data'));
+    //curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json; charset=utf-8'));
+
+    $res = curl_exec($ch);
+    curl_close($ch);
+    if(!$res){
+        $msg = "接口请求错误";
+        return false;
+    }
+
+    $result = json_decode($res,true);
+    if($result === FALSE || $result === NULL){
+        $msg = "接口请求返回数据错误【".$res."】";
+        return false;
+    }
+    return $result;
+}
+?>

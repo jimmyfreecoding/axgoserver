@@ -1,0 +1,20 @@
+<?php
+$CONF = array();
+
+//数据库链接信息
+$CONF["mysql_server_addr"] = "rds52ji8rck5gs211z3rdo.mysql.rds.aliyuncs.com";
+$CONF["mysql_username"]="awatad";
+$CONF["mysql_password"]="Hhsu82lsjH9k";
+$CONF["mysql_dbname"]="axcloud";
+
+//mosquitto参数
+$CONF['mosquitto_server'] = "127.0.0.1";
+$CONF['mosquitto_port'] = "1883";
+$CONF['mosquitto_keepalive'] = "5";
+$CONF['mosquitto_user'] = "geeqee";
+$CONF['mosquitto_passwd'] = "fafd99wehfh9efhsk3";
+$CONF['mosquitto_tmpdir'] = "/work/www.axgo.com/data";
+
+//业务相关配置
+$CONF['dir_data'] = "/storage/axruntime";
+?>

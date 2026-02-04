@@ -1,0 +1,87 @@
+<?php
+require_once(dirname(__FILE__)."/c_config.pms");
+require_once(dirname(__FILE__)."/c_common.pms");
+require_once(dirname(__FILE__)."/jwt.pms");
+
+//header('Content-Type: *');
+//header('Access-Control-Allow-Origin: *');
+//header('Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE');//设置允许访问的协议
+//header('Access-Control-Allow-Credentials: true'); // 设置是否允许发送 cookies
+//header('Access-Control-Allow-Headers: *');
+
+function core_select_data($sql, &$datas){
+
+    $CONF = &$GLOBALS['CONF'];
+
+    $dbcon = common_get_connect($CONF['mysql_server_addr'],$CONF['mysql_username'],$CONF['mysql_password']);
+    common_change_database($CONF['mysql_dbname'], $dbcon);
+
+    $datas = array();
+    $result = mysql_query($sql, $dbcon);
+    while ($row = mysql_fetch_array($result,MYSQL_ASSOC)) {
+        array_push($datas, $row);
+    }
+    mysql_free_result($result);
+    common_close_connect($dbcon);
+    return true;
+}
+
+function core_query_data($sql){
+    $CONF = &$GLOBALS['CONF'];
+    $dbcon = common_get_connect($CONF['mysql_server_addr'],$CONF['mysql_username'],$CONF['mysql_password']);
+    common_change_database($CONF['mysql_dbname'], $dbcon);
+    mysql_query($sql, $dbcon);
+    common_close_connect($dbcon);
+    return true;
+}
+
+/**
+ * @param $code
+ * @param $msg
+ * @param null $datas
+ * @return false|string
+ *
+ *  code规范
+ *  200: '服务器成功返回请求数据', //常用
+    201: '新建或修改数据成功',
+    202: '一个请求已经进入后台排队(异步任务)',
+    204: '删除数据成功',
+    400: '发出信息有误',
+    401: '用户没有权限(令牌失效、用户名、密码错误、登录过期)', //常用
+    402: '令牌过期', //常用
+    403: '用户得到授权，但是访问是被禁止的',
+    404: '访问资源不存在',
+    406: '请求格式不可得',
+    410: '请求资源被永久删除，且不会被看到',
+    500: '服务器发生错误', //常用
+    502: '网关错误',
+    503: '服务不可用，服务器暂时过载或维护',
+    504: '网关超时',
+ *
+ */
+function core_response($code, $msg, $datas = null){
+    $data = array();
+    $data['code'] = $code;
+    $data['msg'] = $msg;
+    if($datas != null){
+        $data['data'] = $datas;
+    }
+    return json_encode($data);
+}
+
+function core_db_fmtlist(&$arr){
+    $re_str = "";
+    if (!is_array($arr)){
+        return $re_str;
+    }
+    foreach ($arr as $key => $value)
+    {
+        $re_str .= ",".$key."='".$value."'";
+    }
+    if (!empty($re_str))
+    {
+        $re_str = ltrim($re_str,',');
+    }
+    return $re_str;
+}
+?>

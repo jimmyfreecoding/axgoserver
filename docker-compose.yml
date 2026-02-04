@@ -11,6 +11,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - ./mysql/data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
     networks:
       - app-network
 
@@ -22,6 +23,7 @@ services:
     restart: always
     volumes:
       - ./www:/var/www/html
+      - ./src:/var/www/src
     networks:
       - app-network
     depends_on:
@@ -37,6 +39,7 @@ services:
       - "443:443"
     volumes:
       - ./www:/var/www/html
+      - ./src:/var/www/src
       - ./nginx/conf.d:/etc/nginx/conf.d
     networks:
       - app-network

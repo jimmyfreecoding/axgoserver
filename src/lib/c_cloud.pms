@@ -1,0 +1,52 @@
+<?php
+/*
+	2018-2-1 bristy pu <bristy.pu@geeqee.com>
+*/
+
+require_once(dirname(__FILE__).'/crypt/RC4.pms');
+
+//RC4静态密钥
+define("C_CLOUD_STATIC_KEY","e065d3232dba9852173be7f8");  //24位
+
+//初始化准备
+function cloud_accessticksum(&$RAW_POST_DATA,&$C)
+{
+	$cipher = new Crypt_RC4();
+	$cipher->setKey(C_CLOUD_STATIC_KEY);
+	$C['cipher'] = &$cipher;
+	$C['request_context'] = json_decode(cloud_decrypt($RAW_POST_DATA,$C['cipher']), true, 16);
+	return(true);
+}
+
+//加密+base64编码函数
+function cloud_encrypt($string,&$cipher)
+{
+	return(base64_encode($cipher->encrypt($string)));
+}
+
+//解密+base64函数
+function cloud_decrypt($string,&$cipher)
+{
+	return($cipher->decrypt(base64_decode($string)));
+}
+
+//返回数据
+function cloud_response($code, $msg="", $context_array=array(), $cipher=null) {
+
+	$context_array = json_encode($context_array);
+	if ($cipher != null) {
+		$context_array = cloud_encrypt($context_array, $cipher);
+	}
+
+	$response=array(
+			'code'=>$code,
+			'msg'=>$msg,
+			'data'=>$context_array
+		);
+
+	header('Cache-Control:no-cache,must-revalidate');
+	header('Pragma:no-cache');
+	echo json_encode($response);
+	return(true);
+}
+?>

@@ -2,6 +2,14 @@
 mysql/data/*
 !mysql/data/.gitkeep
 
+# 数据库初始化脚本
+!mysql/init/
+!mysql/init/*.sql
+
+# 前后端源代码
+!src/
+!www/
+
 # EMQX 数据与日志
 emqx/data/*
 !emqx/data/.gitkeep

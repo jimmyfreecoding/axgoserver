@@ -1,0 +1,4 @@
+<?php
+$AXGO = array();
+$AXGO['dir_axgo'] = "/work/www.axgo.com";
+?>

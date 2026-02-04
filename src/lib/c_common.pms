@@ -1,0 +1,59 @@
+<?php
+/*
+	本程序提供数据库支持服务
+	bristy.pu
+*/
+
+//connect
+function common_get_connect($sever,$uname,$upass){
+	$conn =  mysql_connect($sever,$uname,$upass);
+	return($conn);
+}
+
+//use db
+function common_change_database($dbname,&$conn){
+	$bool = mysql_select_db($dbname,$conn);
+	return($bool);
+}
+
+//执行有结果集返回的sql
+function common_db_select($sql,&$conn){
+	$result = array();
+	$cursor = mysql_query($sql,$conn);
+	return($cursor);
+}
+
+//执行无结果集的sql
+function common_db_query($sql,&$conn){
+	$flag = mysql_query($sql,$conn);
+	return($flag);
+}
+
+//close db link
+function common_close_connect(&$conn){
+	if($conn){
+		mysql_close($conn);
+	}
+}
+
+//transfrom array to str
+//exp: array('a'=>'1','b'=>'2')
+//retunr: a='1',b='2'
+function common_db_fmtlist(&$arr)
+{
+	$re_str = null;
+	if (!is_array($arr)){
+		return(null);
+	}
+	foreach ($arr as $key => $value) 
+	{
+		$re_str .= ",".$key."='".mysql_real_escape_string($value)."'";
+	}
+	if (!empty($re_str)) 
+	{
+		$re_str = ltrim($re_str,',');
+	}
+	return($re_str);
+}
+
+?>

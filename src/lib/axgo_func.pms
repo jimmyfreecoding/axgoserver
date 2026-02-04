@@ -1,0 +1,116 @@
+<?php
+//ini_set("display_errors","On");
+include(dirname(__FILE__)."/axgo_config.pms");
+//_make_show("175c3fec646497428f339a0a2db630a0", '{"version":"0.0.0.1","data":[{"type":"text","name":"欢迎词","value":"欢迎各位领导莅临参观4444","target":"welcome_text"}]}', $result);
+//print_r($result);
+/*
+生成节目zip文件
+支持新增、修改
+$module 模板uuid
+$data   修改的模板数据
+$result 返回结果
+*/
+function _make_show($module, $data, &$request_module_data, &$result){
+	
+	$AXGO = &$GLOBALS['AXGO'];
+	
+	//检测模板是否存在
+	if (!is_dir($AXGO['dir_axgo'].'/module/'.$module)) {
+		$result = '{"status":"error","code":"1","msg":"不存在模板"}';
+		return false;
+	}
+
+	//检测模板是否规范，index.html
+	if (!is_file($AXGO['dir_axgo'].'/module/'.$module."/index.html")) {
+		$result = '{"status":"error","code":"2","msg":"模板缺少index.html"}';
+		return false;
+	}
+
+	//复制module到临时目录
+	$uuid = uuid();
+	$tmpname = "/tmp/".$uuid;
+	$tmpzip = $tmpname.".zip";
+	system("cp -rf ".$AXGO['dir_axgo'].'/module/'.$module." ".$tmpname);
+	//复制template-tracker.js到js目录，如果没有js目录创建
+	if (!is_dir($tmpname."/js")) {
+		system("mkdir -p ".$tmpname."/js");
+	}
+    if (!is_dir($tmpname."/static")) {
+		system("mkdir -p ".$tmpname."/static");
+	}
+	//system("cp -f ".$AXGO['dir_axgo'].'/web/js/template-tracker.js '.$tmpname."/js/");
+	file_put_contents($tmpname.'/js/data.js', "PAGE_DATA = ".$data.";", LOCK_EX);
+
+	file_put_contents($tmpname."/index.html", '<script src="js/data.js?v='.time().'"></script>', FILE_APPEND);
+	//file_put_contents($tmpname."/index.html", '<script src="js/template-tracker.js?v='.time().'"></script>', FILE_APPEND);
+
+    //解析数据中是否有静态资源文件，如图片，视频等文件，需要复制到打包目录中
+    foreach ($request_module_data as $each) {
+        if ($each['type'] == "images" || $each['type'] == "videos") {
+            foreach ($each['value'] as $file) {
+                //新的value
+                if(is_file($AXGO['dir_axgo'].'/tmp/'.$file)){
+                    system("cp -f ".$AXGO['dir_axgo'].'/tmp/'.$file." ".$tmpname."/static/");
+                    usleep(100000);
+                }elseif(is_file($AXGO['dir_axgo'].'/web/static/'.$file)){
+                     system("cp -f ".$AXGO['dir_axgo'].'/web/static/'.$file." ".$tmpname."/static/");
+                    usleep(100000);
+                }
+            }
+        }
+    }
+
+	_zip($tmpname, $tmpzip);
+	if (!file_exists($tmpzip)) {
+		$result = '{"status":"error","code":"3","msg":"模板打包失败"}';
+		system("rm -rf ".$tmpname);
+		return false;
+	}
+	system("mv -f ".$tmpzip." ".$AXGO['dir_axgo']."/web/resource/");
+	system("rm -rf ".$tmpname);
+	$result = '{"status":"success","code":"0","msg":"OK"}';
+	return $uuid;
+}
+
+function _zip($source_dir, $filename){
+	$zip = new ZipArchive();  
+	if(!$zip->open($filename,ZIPARCHIVE::CREATE)){  
+		return false;
+	}  
+	_create_zip(opendir($source_dir),$zip,$source_dir);  
+	$zip->close();  
+}
+
+/*压缩多级目录 
+    $openFile:目录句柄 
+    $zipObj:Zip对象 
+    $sourceAbso:源文件夹路径 
+*/  
+function _create_zip($openFile,$zipObj,$sourceAbso,$newRelat = ''){  
+    while(($file = readdir($openFile)) != false)  
+    {  
+        if($file=="." || $file=="..")  
+            continue;  
+          
+        /*源目录路径(绝对路径)*/  
+        $sourceTemp = $sourceAbso.'/'.$file;  
+        /*目标目录路径(相对路径)*/  
+        $newTemp = $newRelat==''?$file:$newRelat.'/'.$file;  
+        if(is_dir($sourceTemp))  
+        {  
+            //echo '创建'.$newTemp.'文件夹<br/>';  
+            $zipObj->addEmptyDir($newTemp);/*这里注意：php只需传递一个文件夹名称路径即可*/  
+            _create_zip(opendir($sourceTemp),$zipObj,$sourceTemp,$newTemp);  
+        }  
+        if(is_file($sourceTemp))  
+        {  
+            //echo '创建'.$newTemp.'文件<br/>';  
+            $zipObj->addFile($sourceTemp,$newTemp);  
+        }  
+    }  
+}  
+
+function uuid($prefix = ''){  
+	return $prefix.md5(uniqid(mt_rand(), true));
+}
+?>

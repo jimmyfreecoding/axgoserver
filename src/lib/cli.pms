@@ -1,0 +1,104 @@
+<?php
+
+// check pid is exists
+function cli_proc_checkpid($pid,$thisname,&$pid_number=null)
+{
+	$exists = false;
+
+	if (is_file($pid)==true) {
+		$pid_number = trim(file_get_contents($pid));
+	}
+
+	// if this process is exists?
+	if ($pid_number != null && is_file("/proc/".$pid_number."/cmdline")) {
+		$pid_cmdline = trim(file_get_contents('/proc/'.$pid_number.'/cmdline'));
+
+		$scriptname = preg_replace("/\//","\\\/",$thisname);
+
+		// if equal name
+		if (preg_match("/".$scriptname."/i",$pid_cmdline)) {
+			$exists = true;
+		// not equal
+		} else {
+			$exists = false;
+		}
+	// this process is no exists
+	} else {
+		$exists = false;
+	}
+
+	return($exists);
+}
+
+// check pid is exists and is in cache
+function cli_proc_checksinglepid($pid,$match,&$pid_number=null)
+{
+	$exists = false;
+
+	if (is_file($pid)==true) {
+		$pid_number = trim(file_get_contents($pid));
+	}
+
+	// if this process is exists?
+	if ($pid_number != null && is_file("/proc/".$pid_number."/cmdline")) {
+		$pid_cmdline = trim(file_get_contents('/proc/'.$pid_number.'/cmdline'));
+
+		// if contains match
+		if (preg_match("/".$match."/i",$pid_cmdline)) {
+			$exists = true;
+		// not equal
+		} else {
+			$exists = false;
+		}
+	// this process is no exists
+	} else {
+		$exists = false;
+	}
+
+	return($exists);
+}
+
+/*-------------------------------------------------------------------------
+  message functions
+-------------------------------------------------------------------------*/
+/*
+	messages string
+	msg level number 0/1/2/3/4
+	handle stderr handle / filename
+*/
+function cli_message($msg,$msglevel,$handle)
+{
+	if ($handle == null)
+		return(true);
+
+    $type=null;
+	switch($msglevel) {
+		case 4  :   $type='DEBUG';break;
+        case 3  :   $type='INFO';break;
+        case 2  :   $type='NOTICE';break;
+        case 1  :   $type='WARNING';break;
+        case 0  :   $type='ERROR';break;
+    }
+    fwrite($handle,"[".$type."][".time().",".posix_getpid()."]".$msg."\n");
+
+	return(true);
+}
+
+//create child progress to run, do not need to wait child progress finish
+function cli_run_process($run,$run_args)
+{
+    $pid = pcntl_fork();
+    //fork failed
+    if ($pid == -1) {
+        return(false);
+    //in parent to close the parent
+    } elseif ($pid) {
+        return(true);
+    //in child
+    } else {
+        pcntl_exec($run,$run_args);
+        exit;
+    }
+	return(true);
+}
+?>
