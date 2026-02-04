@@ -11,13 +11,13 @@ COPY src/ax-go-admin/dist/www.zip /tmp/www.zip
 
 # 1. 解压 www.zip
 # 2. 将 ax-go-admin 子目录下的所有文件移动到 /var/www/html/
-# 3. 删除空的 ax-go-admin 目录
+# 3. 强制删除（可能非空的）ax-go-admin 目录
 # 4. 设置权限
 RUN mkdir -p /var/www/html && \
     unzip /tmp/www.zip -d /var/www/html && \
     if [ -d "/var/www/html/ax-go-admin" ]; then \
         mv /var/www/html/ax-go-admin/* /var/www/html/ && \
-        rmdir /var/www/html/ax-go-admin; \
+        rm -rf /var/www/html/ax-go-admin; \
     fi && \
     chmod -R 755 /var/www/html && \
     rm /tmp/www.zip
