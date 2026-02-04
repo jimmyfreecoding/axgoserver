@@ -5,7 +5,12 @@ RUN apk add --no-cache unzip && \
     docker-php-ext-install pdo pdo_mysql mysqli
 
 # 允许 PHP 处理 .do 后缀
-RUN echo "security.limit_extensions = .php .do" >> /usr/local/etc/php-fpm.d/www.conf
+# 增加 pm.max_children 设置 (默认是 5，对于并发请求很容易占满)
+RUN echo "security.limit_extensions = .php .do" >> /usr/local/etc/php-fpm.d/www.conf && \
+    sed -i 's/pm.max_children = 5/pm.max_children = 50/g' /usr/local/etc/php-fpm.d/www.conf && \
+    sed -i 's/pm.start_servers = 2/pm.start_servers = 5/g' /usr/local/etc/php-fpm.d/www.conf && \
+    sed -i 's/pm.min_spare_servers = 1/pm.min_spare_servers = 5/g' /usr/local/etc/php-fpm.d/www.conf && \
+    sed -i 's/pm.max_spare_servers = 3/pm.max_spare_servers = 35/g' /usr/local/etc/php-fpm.d/www.conf
 
 WORKDIR /var/www/html
 

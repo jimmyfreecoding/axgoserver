@@ -6,29 +6,47 @@
 
 //connect
 function common_get_connect($sever,$uname,$upass){
+	error_log("Trying to connect to MySQL: Host=$sever, User=$uname");
 	// 改用 mysqli
 	$conn = mysqli_connect($sever,$uname,$upass);
+	if (!$conn) {
+		error_log("MySQL Connection Failed: " . mysqli_connect_error());
+	} else {
+		error_log("MySQL Connection Success!");
+	}
 	return($conn);
 }
 
 //use db
 function common_change_database($dbname,&$conn){
+	error_log("Selecting Database: $dbname");
 	// 改用 mysqli_select_db
 	$bool = mysqli_select_db($conn, $dbname);
+	if (!$bool) {
+		error_log("Select Database Failed: " . mysqli_error($conn));
+	}
 	return($bool);
 }
 
 //执行有结果集返回的sql
 function common_db_select($sql,&$conn){
+	// error_log("Executing Select SQL: " . $sql);
 	// 改用 mysqli_query
 	$cursor = mysqli_query($conn, $sql);
+	if (!$cursor) {
+		error_log("Select SQL Failed: " . mysqli_error($conn));
+	}
 	return($cursor);
 }
 
 //执行无结果集的sql
 function common_db_query($sql,&$conn){
+	// error_log("Executing Query SQL: " . $sql);
 	// 改用 mysqli_query
 	$flag = mysqli_query($conn, $sql);
+	if (!$flag) {
+		error_log("Query SQL Failed: " . mysqli_error($conn));
+	}
 	return($flag);
 }
 
