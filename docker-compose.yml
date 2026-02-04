@@ -1,0 +1,65 @@
+services:
+  # MySQL 8 服务
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    networks:
+      - app-network
+
+  # PHP 8.3-FPM 服务
+  php:
+    build:
+      context: ./php
+    container_name: php
+    restart: always
+    volumes:
+      - ./www:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      - mysql
+
+  # Nginx 最新稳定版
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    restart: always
+    ports:
+      - "8080:80"
+      - "443:443"
+    volumes:
+      - ./www:/var/www/html
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - app-network
+    depends_on:
+      - php
+
+  # EMQX 开源版
+  emqx:
+    image: emqx/emqx:latest
+    container_name: emqx
+    restart: always
+    ports:
+      - "1883:1883"     # MQTT TCP
+      - "8883:8883"     # MQTT SSL
+      - "8083:8083"     # MQTT WS
+      - "8084:8084"     # MQTT WSS
+      - "18083:18083"   # Dashboard
+    volumes:
+      - ./emqx/data:/opt/emqx/data
+      - ./emqx/log:/opt/emqx/log
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
