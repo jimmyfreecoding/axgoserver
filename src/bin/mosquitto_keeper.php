@@ -118,7 +118,7 @@ function cmd_main()
 
 		//读取指令文件
 		$count = 1;  //计数
-        if(is_dir($CONF['mosquitto_tmpdir'])){
+        if(!is_dir($CONF['mosquitto_tmpdir'])){
             system("mkdir -p ".$CONF['mosquitto_tmpdir']);
         }
 		$list = scandir($CONF['mosquitto_tmpdir']);
