@@ -129,7 +129,7 @@ function cmd_main()
 			//移动任务文件，防止第二次被检测到
 			system("mv -f ".$CONF['mosquitto_tmpdir'].'/'.$item." /tmp/".$item);
 			//分发任务
-			cli_run_process($MYCONF['basedir'].'/mosquitto_pub',array($item,'--quiet'));
+			cli_run_process("php ".$MYCONF['basedir'].'/mosquitto_pub.php ',array($item,'--quiet'));
 			usleep(100000);
 			++$count;
 		}

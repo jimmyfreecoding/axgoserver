@@ -2,7 +2,7 @@ FROM php:8.3-fpm-alpine
 
 # 安装常用扩展和 unzip 工具
 RUN apk add --no-cache unzip && \
-    docker-php-ext-install pdo pdo_mysql mysqli
+    docker-php-ext-install pdo pdo_mysql mysqli pcntl
 
 # 允许 PHP 处理 .do 后缀
 # 增加 pm.max_children 设置 (默认是 5，对于并发请求很容易占满)

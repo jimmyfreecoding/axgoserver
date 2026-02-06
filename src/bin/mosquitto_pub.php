@@ -1,4 +1,3 @@
-#!/apps/axruntime/bin/jdk-cli 
 <?php
 //ini_set("display_errors","On");
 /*

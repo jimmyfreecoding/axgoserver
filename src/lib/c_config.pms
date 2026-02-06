@@ -10,7 +10,7 @@ $CONF["mysql_dbname"] = getenv('MYSQL_DATABASE') ;
 $CONF["mysql_port"] = getenv('MYSQL_PORT') ;
 
 //mosquitto参数
-$CONF['mosquitto_server'] = "127.0.0.1";
+$CONF['mosquitto_server'] = "emqx.zeabur.internal";
 $CONF['mosquitto_port'] = "1883";
 $CONF['mosquitto_keepalive'] = "5";
 $CONF['mosquitto_user'] = "geeqee";
