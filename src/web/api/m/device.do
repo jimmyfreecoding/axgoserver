@@ -1085,8 +1085,8 @@ function _request($url,$method = "GET", $data = array()){
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     }
     
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:multipart/form-data'));
-    //curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json; charset=utf-8'));	
+    //curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:multipart/form-data'));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json; charset=utf-8'));	
 
     $result['data'] = json_decode(curl_exec($ch),1);
     $result['httpCode'] = curl_getinfo($ch,CURLINFO_HTTP_CODE);
