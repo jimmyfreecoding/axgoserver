@@ -19,4 +19,5 @@ $CONF['mosquitto_tmpdir'] = "/work/www.axgo.com/data";
 
 //业务相关配置
 $CONF['dir_data'] = "/storage/axruntime";
+$CONF['url_pre'] = "https://nodered.ax-go.com";
 ?>

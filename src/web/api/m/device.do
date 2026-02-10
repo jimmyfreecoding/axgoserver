@@ -106,7 +106,8 @@ function act_device_app_reload(){
     $job['commandType'] = "system";
     $job['command'] = array();
     $job['command']['type'] = "app_reload";
-    file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+    //file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+    _request($CONF['url_pre']."/mqtt", "POST", $job);
 
     $data = '{"status":"success","code":"0","msg":"ok"}';
     _response($data);
@@ -156,8 +157,8 @@ function _device_down_rules($macaddr){
     $job['command'] = array();
     $job['command']['type'] = "face_rule";
     $job['command']['rules'] = $face_rules;
-    file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
-
+    //file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+    _request($CONF['url_pre']."/mqtt", "POST", $job);
     $data = '{"status":"success","code":"0","msg":"ok"}';
     _response($data);
     exit;
@@ -565,7 +566,8 @@ function act_device_template_data_down(){
     $job['command']['type'] = "template_data";
     $job['command']['templateUUID'] = $templates[0]['uid'];
     $job['command']['data'] = json_decode('{"roomName":"1楼会议室","roderlist":[{"sTime":"09:00","eTime":"09:30","status":"past","subject":"开发会议","creator":"何铮"},{"sTime":"10:10","eTime":"10:20","status":"doing","subject":"开发会议","creator":"何铮"},{"sTime":"11:00","eTime":"11:30","status":"future","subject":"开发会议","creator":"何铮"}],"descs":[{"text":"VIP会议室"},{"text":"可容纳人数:10人"},{"text":"设备:投影仪 投屏设备"},{"text":"会议室开放范围：全公司"},{"text":"下场会议开始时间：10：00"},{"text":"剩余：23小时33分"}],"config":{}}', true);
-    file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+    //file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+    _request($CONF['url_pre']."/mqtt", "POST", $job);
 
     $data = '{"status":"success","code":"0","msg":"ok"}';
     _response($data);
@@ -642,7 +644,8 @@ function act_device_template_down(){
     $job['command']['templateUUID'] = $templates[0]['uid'];
     $job['command']['templatePkgMD5'] = $templates[0]['pkg_md5'];
     $job['command']['templateDownloadUrl'] = $templates[0]['pkg_url'];
-    file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+    //file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+    _request($CONF['url_pre']."/mqtt", "POST", $job);
     core_query_data("update axgo_device set template = '".$templates[0]['uid']."' where id = '".$devices[0]['id']."'");
 
 
@@ -695,7 +698,8 @@ function act_device_template_down(){
         $job['command']['type'] = "template_data";
         $job['command']['templateUUID'] = $templates[0]['uid'];
         $job['command']['data'] = $initData;
-        file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+        //file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+        _request($CONF['url_pre']."/mqtt", "POST", $job);
     }
 
     $data = '{"status":"success","code":"0","msg":"ok"}';
@@ -856,7 +860,8 @@ function act_user_device_bind(){
         $job['command'] = array();
         $job['command']['type'] = "door_passwd";
         $job['command']['passwd'] = $_REQUEST['doorPasswd'];
-        file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+        //file_put_contents($CONF['mosquitto_tmpdir']."/".uniqid("MQTT"), json_encode($job), LOCK_EX);
+        _request($CONF['url_pre']."/mqtt", "POST", $job);
     }
 
     //重复提交，空间未变动
@@ -1060,5 +1065,35 @@ function _response($data){
         $data = $_REQUEST['callback'].'('.$data.')';
     }
     echo $data;
+}
+
+function _request($url,$method = "GET", $data = array()){
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+    if (strpos($url, "https") !== FALSE) {
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // 跳过证书检查
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);  // 从证书中检查SSL加密算法是否存在
+    }
+    if($method == "POST"){
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST,	'POST');			
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    }
+    
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:multipart/form-data'));
+    //curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json; charset=utf-8'));	
+
+    $result['data'] = json_decode(curl_exec($ch),1);
+    $result['httpCode'] = curl_getinfo($ch,CURLINFO_HTTP_CODE);
+    if(strlen(curl_error($ch))>1){
+        $result = false;
+    }
+    curl_close($ch);
+    return $result;
 }
 ?>
