@@ -1067,24 +1067,23 @@ function _response($data){
     echo $data;
 }
 
-function httpRequest($url, $method, $params) {
-    $header = array("Content-Type: application/json; charset=utf-8");
-    $ch = curl_init();
-    if ($method == "POST") {
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
-    } elseif (is_array($params) && 0 < count($params)) {
-        curl_setopt($ch, CURLOPT_URL, $url . "?" . http_build_query($params));
-    } else {
-        curl_setopt($ch, CURLOPT_URL, $url);
-    }
-    curl_setopt($ch, CURLOPT_HEADER, false);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FORBID_REUSE, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-   $data = curl_exec($ch);
-   curl_close($ch);
-   return $data;
+function _request($url, $method, $data) {
+    $curl = curl_init();
+    curl_setopt($curl, CURLOPT_URL, $url);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+    $data = json_encode($data);
+    curl_setopt($curl, CURLOPT_POST, 1);
+    curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($curl, CURLOPT_HTTPHEADER,array(
+            'Content-Type: application/json; charset=utf-8',
+            'Content-Length:' . strlen($data),
+            'Cache-Control: no-cache',
+            'Pragma: no-cache'
+    ));
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+    $res = curl_exec($curl);
+    curl_close($curl);
+    return $res;
 }
 ?>
