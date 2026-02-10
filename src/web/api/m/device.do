@@ -1067,29 +1067,24 @@ function _response($data){
     echo $data;
 }
 
-function _request($url,$method = "GET", $data = array()){
+function httpRequest($url, $method, $params) {
+    $header = array("Content-Type: application/json; charset=utf-8");
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_HEADER, 1);
-    if (strpos($url, "https") !== FALSE) {
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // 跳过证书检查
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);  // 从证书中检查SSL加密算法是否存在
+    if ($method == "POST") {
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+    } elseif (is_array($params) && 0 < count($params)) {
+        curl_setopt($ch, CURLOPT_URL, $url . "?" . http_build_query($params));
+    } else {
+        curl_setopt($ch, CURLOPT_URL, $url);
     }
-    if($method == "POST"){
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    }
-    
-    //curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:multipart/form-data'));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json; charset=utf-8'));	
-
-    $result['data'] = json_decode(curl_exec($ch),1);
-    $result['httpCode'] = curl_getinfo($ch,CURLINFO_HTTP_CODE);
-    if(strlen(curl_error($ch))>1){
-        $result = false;
-    }
-    curl_close($ch);
-    return $result;
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FORBID_REUSE, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+   $data = curl_exec($ch);
+   curl_close($ch);
+   return $data;
 }
 ?>
