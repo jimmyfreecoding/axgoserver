@@ -1,4 +1,4 @@
-在 Zeabur 中部署这个项目非常简单，虽然 Zeabur 不直接支持自动拆分 `docker-compose.yml`，但我们可以手动添加相关服务来构建完整的环境。
+在 Zeabur 中部署这个项目，当前采用的是单镜像方案：MySQL 和 EMQX 独立部署，前端静态资源、Nginx 和 PHP 后端合并到项目根目录的 `Dockerfile` 中一次部署完成。
 
 以下是详细的部署步骤：
 
@@ -12,7 +12,7 @@ git push
 ```
 
 ### 第二步：在 Zeabur 中部署服务
-在一个 Zeabur 项目内，手动添加以下 4 个服务：
+在一个 Zeabur 项目内，手动添加以下 3 个服务：
 
 #### 1. 部署 MySQL (数据库)
 1. 点击 **"Deploy New Service"** -> **"Marketplace"**。
@@ -23,20 +23,22 @@ git push
 1. 点击 **"Deploy New Service"** -> **"Marketplace"**。
 2. 搜索并选择 **"EMQX"**。
 
-#### 3. 部署 PHP (后端)
+#### 3. 部署 Web 应用 (前端 + Nginx + PHP)
 1. 点击 **"Deploy New Service"** -> **"GitHub"** -> 选择你的 `axgoserver` 仓库。
-2. 进入该服务的 **"Settings"** -> **"Docker"**：
-   - 将 **Dockerfile Path** 设置为 `php/Dockerfile`。
-3. 进入 **"Networking"**：
-   - 在 **Service Alias** 处填入 `php`（这非常重要，Nginx 会通过这个名字找到它）。
-4. 在 **"Variables"** 中添加数据库环境变量（与 MySQL 服务保持一致）。
-
-#### 4. 部署 Nginx (网关/前端)
-1. 点击 **"Deploy New Service"** -> **"GitHub"** -> 再次选择你的 `axgoserver` 仓库。
-2. 进入该服务的 **"Settings"** -> **"Docker"**：
-   - 将 **Dockerfile Path** 设置为 `nginx/Dockerfile`。
-3. 进入 **"Networking"**：
-   - 点击 **"Generate Domain"** 生成一个公共访问域名。
+2. 进入该服务的 **"Settings"** -> **"Build"**：
+   - **Root Directory** 保持为 `/`
+   - **Dockerfile Path** 使用项目根目录的 `Dockerfile`
+3. 在 **"Variables"** 中不要手动覆盖数据库自动注入变量，直接使用 Zeabur 关联 MySQL 后生成的：
+   - `MYSQL_HOST`
+   - `MYSQL_PORT`
+   - `MYSQL_USERNAME`
+   - `MYSQL_PASSWORD`
+   - `MYSQL_DATABASE`
+4. 如果需要 MQTT 连接，请确认：
+   - `EMQX` 服务的内网主机名为 `emqx.zeabur.internal`
+   - Dashboard 登录后已创建代码中使用的 MQTT 用户
+5. 进入 **"Networking"**：
+   - 点击 **"Generate Domain"** 或绑定你自己的域名
 
 ### 第三步：配置持久化存储 (Volume)
 为了保证数据库和 EMQX 的数据在重启后不丢失，需要挂载卷：
@@ -47,8 +49,9 @@ git push
    - 挂载路径填入：`/opt/emqx/data`
 
 ### 第四步：访问项目
-1. 访问 Nginx 服务生成的域名（例如 `https://axgo.zeabur.app`）。
-2. 你能看到 `index.html` 的内容，或者访问 `/api/test_db.do` 测试数据库连接。
+1. 访问 Web 服务生成的域名（例如 `https://axgo.zeabur.app`）。
+2. 访问首页确认前端资源已正常解压。
+3. 访问 `/api/login` 或 `/api/login.do` 确认 `.do` 重写与 PHP 解析正常。
 
 ---
 
@@ -71,4 +74,8 @@ git push
 ```
 
 **自动部署**：
-Zeabur 会自动拉取代码，在 Docker 构建过程中自动解压 `www.zip` 到容器的 `/var/www/html` 目录，完成更新。
+Zeabur 会自动拉取代码，并在根目录 `Dockerfile` 构建过程中完成以下工作：
+- 解压 `src/ax-go-admin/dist/www.zip` 到 `/var/www/html`
+- 启动同容器内的 PHP-FPM
+- 启动 Nginx
+- 处理 `/api/*` 到 `.do` 的重写以及 PHP 转发
