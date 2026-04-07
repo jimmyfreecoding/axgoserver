@@ -22,6 +22,7 @@ function act_mqtt_config(){
     $config['userName'] = 'geeqee';
     $config['passWord'] = 'fafd99wehfh9efhsk3';
 
+
 	$data = '{"status":"success","code":"0","msg":"OK", "data": '.json_encode($config).'}';
 	_response($data);
 	exit;
