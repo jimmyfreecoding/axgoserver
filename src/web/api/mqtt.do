@@ -18,7 +18,7 @@ exit;
 function act_mqtt_config(){
 
     $config = array();
-    $config['host'] = 'tcp://49.51.243.227:31504';
+    $config['host'] = 'tcp://101.133.150.37:32093';
     $config['userName'] = 'geeqee';
     $config['passWord'] = 'fafd99wehfh9efhsk3';
 
